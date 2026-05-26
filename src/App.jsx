@@ -290,7 +290,7 @@ export default function App() {
             <button key={di} onClick={() => setSel(isSel ? null : di)}
               style={{ aspectRatio: "1", borderRadius: "var(--r)", cursor: "pointer",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
-                border: isToday ? "2px solid var(--amber)" : done ? "none" : missed ? "0.5px dashed var(--red-bd)" : isSel ? "0.5px solid var(--bd2)" : "0.5px solid var(--bd)",
+                border: isSel ? "2px solid var(--amber)" : isToday ? "1.5px dashed rgba(180,100,20,0.4)" : done ? "none" : missed ? "0.5px dashed var(--red-bd)" : "0.5px solid var(--bd)",
                 background: done ? "var(--green-bg)" : isSel ? "var(--bg2)" : "transparent",
                 transition: "all .15s" }}>
               <span style={{ fontSize: 14, fontWeight: isToday ? 600 : 400, lineHeight: 1,
