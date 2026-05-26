@@ -353,7 +353,7 @@ export default function App() {
       )}
 
       <p style={{ fontSize: 11, color: "var(--t3)", lineHeight: 1.7 }}>
-        Inicio: 25 may 2026 · Día {pd + 1} del plan · Evangelios, Hechos y Salmos verificados del PDF.
+        Inicio: 25 may 2026 · Día {getFirstUnread(prog) ? (getFirstUnread(prog).m * 25) + getFirstUnread(prog).d + 1 : 300} del plan · Evangelios, Hechos y Salmos verificados del PDF.
         Epístolas y AT: confirmar con el plan impreso (navlink.org/bible-reading-plan).
       </p>
     </div>
