@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { db } from "./firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const PLAN = [
   {n:1,bk:["Mateo","Hechos","Salmos","Génesis"],d:[
@@ -183,32 +185,24 @@ const PLAN = [
   ]}
 ];
 
-const KEY = "nav-bible-v1";
 const START = new Date(2026, 4, 25);
+const USER_ID = "mi-plan-unico"; // Identificador para la base de datos
 
-function loadProg() {
-  try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; }
-}
-function saveProg(d) {
-  try { localStorage.setItem(KEY, JSON.stringify(d)); } catch {}
-}
 function planDay() {
   return Math.max(0, Math.min(Math.floor((new Date() - START) / 86400000), 299));
 }
+
+// Racha corregida: cuenta todos tus días leídos en orden desde el inicio
 function calcStreak(prog) {
-  let s = 0, pd = planDay();
-  for (let d = 0; d <= pd; d++) {
-    if (prog[`${Math.floor(d/25)}-${d%25}`]) s++; else break;
+  let s = 0;
+  for (let m = 0; m < 12; m++) {
+    for (let d = 0; d < 25; d++) {
+      if (prog[`${m}-${d}`]) s++;
+      else return s;
+    }
   }
   return s;
 }
-
-const COL_STYLE = [
-  { background: "var(--blue-bg)", color: "var(--blue)" },
-  { background: "var(--amber-bg)", color: "var(--amber)" },
-  { background: "var(--green-bg)", color: "var(--green)" },
-  { background: "var(--red-bg)", color: "var(--red)" },
-];
 
 function getFirstUnread(progData) {
   for (let m = 0; m < 12; m++) {
@@ -219,24 +213,65 @@ function getFirstUnread(progData) {
   return null;
 }
 
+const COL_STYLE = [
+  { background: "var(--blue-bg)", color: "var(--blue)" },
+  { background: "var(--amber-bg)", color: "var(--amber)" },
+  { background: "var(--green-bg)", color: "var(--green)" },
+  { background: "var(--red-bg)", color: "var(--red)" },
+];
+
 export default function App() {
-  const [prog, setProg] = useState(() => loadProg());
-  
-  const [mi, setMi] = useState(() => {
-    const next = getFirstUnread(loadProg());
-    return next ? next.m : Math.floor(planDay() / 25);
-  });
+  const [prog, setProg] = useState({});
+  const [mi, setMi] = useState(0);
+  const [sel, setSel] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const [sel, setSel] = useState(() => {
-    const next = getFirstUnread(loadProg());
-    return next ? next.d : planDay() % 25;
-  });
+  // Cargar datos desde la nube al abrir la app
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const docRef = doc(db, "planes", USER_ID);
+        const docSnap = await getDoc(docRef);
+        
+        let data = {};
+        if (docSnap.exists()) {
+          data = docSnap.data().prog || {};
+        }
+        
+        setProg(data);
+        
+        const next = getFirstUnread(data);
+        if (next) {
+          setMi(next.m);
+          setSel(next.d);
+        } else {
+          setMi(Math.floor(planDay() / 25));
+          setSel(planDay() % 25);
+        }
+      } catch (error) {
+        console.error("Error cargando de Firebase:", error);
+      } finally {
+        setLoading(false); // Quitar pantalla de carga
+      }
+    };
+    loadData();
+  }, []);
 
-  const toggle = (m, d) => {
+  // Guardar datos en la nube al marcar un día
+  const toggle = async (m, d) => {
     const k = `${m}-${d}`;
-    const next = { ...prog, [k]: !prog[k] };
-    setProg(next);
-    saveProg(next);
+    const nextProg = { ...prog, [k]: !prog[k] };
+    
+    // Actualiza la pantalla instantáneamente (para que no se sienta lento)
+    setProg(nextProg);
+    
+    // Guarda en la nube en segundo plano
+    try {
+      const docRef = doc(db, "planes", USER_ID);
+      await setDoc(docRef, { prog: nextProg }, { merge: true });
+    } catch (error) {
+      console.error("Error guardando en Firebase:", error);
+    }
   };
 
   const pd = planDay();
@@ -247,6 +282,15 @@ export default function App() {
   const streak = calcStreak(prog);
   const month = PLAN[mi];
   const mDone = month.d.filter((_, i) => prog[`${mi}-${i}`]).length;
+
+  // Pantalla de carga mientras trae los datos de la nube
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontFamily: "var(--serif)", color: "var(--t2)" }}>Cargando tu progreso...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
