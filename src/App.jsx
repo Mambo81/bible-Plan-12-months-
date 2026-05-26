@@ -192,7 +192,6 @@ function planDay() {
   return Math.max(0, Math.min(Math.floor((new Date() - START) / 86400000), 299));
 }
 
-// Racha corregida: cuenta todos tus días leídos en orden desde el inicio
 function calcStreak(prog) {
   let s = 0;
   for (let m = 0; m < 12; m++) {
@@ -226,7 +225,6 @@ export default function App() {
   const [sel, setSel] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Cargar datos desde la nube al abrir la app
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -251,21 +249,28 @@ export default function App() {
       } catch (error) {
         console.error("Error cargando de Firebase:", error);
       } finally {
-        setLoading(false); // Quitar pantalla de carga
+        setLoading(false);
       }
     };
     loadData();
   }, []);
 
-  // Guardar datos en la nube al marcar un día
-  const toggle = async (m, d) => {
+  // Alternar un día completo
+  const toggleDay = async (m, d) => {
     const k = `${m}-${d}`;
-    const nextProg = { ...prog, [k]: !prog[k] };
+    const isDone = !!prog[k];
     
-    // Actualiza la pantalla instantáneamente (para que no se sienta lento)
+    const nextProg = { 
+      ...prog, 
+      [k]: !isDone,
+      [`${k}-p0`]: !isDone,
+      [`${k}-p1`]: !isDone,
+      [`${k}-p2`]: !isDone,
+      [`${k}-p3`]: !isDone,
+    };
+    
     setProg(nextProg);
     
-    // Guarda en la nube en segundo plano
     try {
       const docRef = doc(db, "planes", USER_ID);
       await setDoc(docRef, { prog: nextProg }, { merge: true });
@@ -274,16 +279,48 @@ export default function App() {
     }
   };
 
+  // Alternar un pasaje individual
+  const togglePart = async (m, d, pIndex) => {
+    const k = `${m}-${d}`;
+    const wasDayDone = !!prog[k];
+
+    // Calcula el estado actual de las 4 partes
+    let parts = [0, 1, 2, 3].map(i => wasDayDone || !!prog[`${k}-p${i}`]);
+    
+    // Invierte la parte que tocaste
+    parts[pIndex] = !parts[pIndex];
+    
+    // Si las 4 están verdaderas, el día completo está verdadero
+    const allDone = parts.every(Boolean);
+
+    const nextProg = {
+      ...prog,
+      [k]: allDone,
+      [`${k}-p0`]: parts[0],
+      [`${k}-p1`]: parts[1],
+      [`${k}-p2`]: parts[2],
+      [`${k}-p3`]: parts[3],
+    };
+
+    setProg(nextProg);
+
+    try {
+      const docRef = doc(db, "planes", USER_ID);
+      await setDoc(docRef, { prog: nextProg }, { merge: true });
+    } catch (error) {
+      console.error("Error guardando parte en Firebase:", error);
+    }
+  };
+
   const pd = planDay();
   const cm = Math.floor(pd / 25);
   const cd = pd % 25;
-  const total = Object.values(prog).filter(Boolean).length;
+  const total = Object.values(prog).filter(val => val === true).length; // Solo cuenta días enteros
   const pct = Math.round(total / 3);
   const streak = calcStreak(prog);
   const month = PLAN[mi];
   const mDone = month.d.filter((_, i) => prog[`${mi}-${i}`]).length;
 
-  // Pantalla de carga mientras trae los datos de la nube
   if (loading) {
     return (
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
@@ -368,30 +405,47 @@ export default function App() {
 
       {sel !== null && (
         <div style={{ background: "var(--bg2)", borderRadius: "var(--r2)", border: "0.5px solid var(--bd)", padding: "14px 16px", marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontWeight: 500, fontSize: 15, color: "var(--t1)" }}>Día {sel + 1}</span>
               {getFirstUnread(prog) && mi === getFirstUnread(prog).m && sel === getFirstUnread(prog).d && (
                 <span style={{ fontSize: 11, background: "var(--amber-bg)", color: "var(--amber)", padding: "2px 8px", borderRadius: 100 }}>Siguiente</span>
               )}
             </div>
-            <button onClick={() => toggle(mi, sel)}
-              style={{ padding: "5px 14px", fontSize: 13, fontWeight: 500, borderRadius: "var(--r)", cursor: "pointer",
+            <button onClick={() => toggleDay(mi, sel)}
+              style={{ padding: "5px 14px", fontSize: 13, fontWeight: 500, borderRadius: "var(--r)", cursor: "pointer", transition: "all .2s",
                 border: prog[`${mi}-${sel}`] ? "0.5px solid var(--green-bd)" : "0.5px solid var(--bd2)",
                 background: prog[`${mi}-${sel}`] ? "var(--green-bg)" : "transparent",
                 color: prog[`${mi}-${sel}`] ? "var(--green)" : "var(--t1)" }}>
-              {prog[`${mi}-${sel}`] ? "Leído ✓" : "Marcar leído"}
+              {prog[`${mi}-${sel}`] ? "Día completo ✓" : "Marcar todo"}
             </button>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {month.d[sel].map((r, ri) => (
-              <div key={ri} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, flexShrink: 0, minWidth: 46, textAlign: "center", ...COL_STYLE[ri] }}>
-                  {month.bk[ri].split("/")[0].trim().split(" ")[0]}
-                </span>
-                <span style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--t1)" }}>{r}</span>
-              </div>
-            ))}
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {month.d[sel].map((r, ri) => {
+              const isP = prog[`${mi}-${sel}`] || prog[`${mi}-${sel}-p${ri}`];
+              return (
+                <div key={ri} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <button onClick={() => togglePart(mi, sel, ri)}
+                    style={{ width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+                      border: isP ? "none" : "1.5px solid var(--bd2)",
+                      background: isP ? "var(--green)" : "transparent",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: "pointer", transition: "all .2s" }}>
+                    {isP && <svg width="12" height="12" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </button>
+                  <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, flexShrink: 0, minWidth: 46, textAlign: "center", ...COL_STYLE[ri] }}>
+                    {month.bk[ri].split("/")[0].trim().split(" ")[0]}
+                  </span>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: 14, transition: "all .2s",
+                    color: isP ? "var(--t3)" : "var(--t1)", 
+                    textDecoration: isP ? "line-through" : "none",
+                    opacity: isP ? 0.6 : 1 }}>
+                    {r}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
