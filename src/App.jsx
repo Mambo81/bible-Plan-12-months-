@@ -315,7 +315,7 @@ export default function App() {
   const pd = planDay();
   const cm = Math.floor(pd / 25);
   const cd = pd % 25;
-  const total = Object.values(prog).filter(val => val === true).length; // Solo cuenta días enteros
+  const total = Object.keys(prog).filter(key => !key.includes('-p') && prog[key]).length; 
   const pct = Math.round(total / 3);
   const streak = calcStreak(prog);
   const month = PLAN[mi];
