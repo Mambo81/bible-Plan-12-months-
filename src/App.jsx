@@ -210,10 +210,27 @@ const COL_STYLE = [
   { background: "var(--red-bg)", color: "var(--red)" },
 ];
 
+function getFirstUnread(progData) {
+  for (let m = 0; m < 12; m++) {
+    for (let d = 0; d < 25; d++) {
+      if (!progData[`${m}-${d}`]) return { m, d };
+    }
+  }
+  return null;
+}
+
 export default function App() {
   const [prog, setProg] = useState(() => loadProg());
-  const [mi, setMi] = useState(() => Math.floor(planDay() / 25));
-  const [sel, setSel] = useState(() => planDay() % 25);
+  
+  const [mi, setMi] = useState(() => {
+    const next = getFirstUnread(loadProg());
+    return next ? next.m : Math.floor(planDay() / 25);
+  });
+
+  const [sel, setSel] = useState(() => {
+    const next = getFirstUnread(loadProg());
+    return next ? next.d : planDay() % 25;
+  });
 
   const toggle = (m, d) => {
     const k = `${m}-${d}`;
