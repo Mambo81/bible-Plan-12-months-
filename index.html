@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Plan Bíblico" />
+    <title>Plan Bíblico Navigators</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #faf9f7; color: #1a1917; }
+      #root { max-width: 560px; margin: 0 auto; padding: 20px 16px 48px; }
+      :root {
+        --bg1: #ffffff; --bg2: #f5f4f0; --bg3: #eceae4;
+        --t1: #1a1917; --t2: #5a5953; --t3: #9a9990;
+        --green: #166534; --green-bg: #f0fdf4; --green-bd: rgba(22,101,52,.25);
+        --amber: #92400e; --amber-bg: #fffbeb; --amber-bd: rgba(146,64,14,.3);
+        --red: #991b1b; --red-bg: #fef2f2; --red-bd: rgba(153,27,27,.25);
+        --blue: #1e40af; --blue-bg: #eff6ff; --blue-bd: rgba(30,64,175,.25);
+        --bd: rgba(0,0,0,.1); --bd2: rgba(0,0,0,.18); --bd3: rgba(0,0,0,.3);
+        --r: 8px; --r2: 12px; --mono: ui-monospace, 'Cascadia Code', monospace;
+        --serif: Georgia, 'Times New Roman', serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { background: #141412; color: #f0efe8; }
+        :root {
+          --bg1: #1e1d1b; --bg2: #262522; --bg3: #2e2c29;
+          --t1: #f0efe8; --t2: #a8a79e; --t3: #68675f;
+          --green: #4ade80; --green-bg: #052e16; --green-bd: rgba(74,222,128,.25);
+          --amber: #fbbf24; --amber-bg: #1c1400; --amber-bd: rgba(251,191,36,.3);
+          --red: #f87171; --red-bg: #1f0000; --red-bd: rgba(248,113,113,.25);
+          --blue: #93c5fd; --blue-bg: #0f172a; --blue-bd: rgba(147,197,253,.25);
+          --bd: rgba(255,255,255,.1); --bd2: rgba(255,255,255,.18); --bd3: rgba(255,255,255,.3);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
