@@ -300,8 +300,9 @@ export default function App() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 7, marginBottom: 14 }}>
         {month.d.map((_, di) => {
           const done = !!prog[`${mi}-${di}`];
-          const isToday = mi === cm && di === cd;
-          const missed = !done && (mi < cm || (mi === cm && di < cd));
+          const next = getFirstUnread(prog);
+          const isToday = next ? (mi === next.m && di === next.d) : false;
+          const missed = false;
           const isSel = sel === di;
           return (
             <button key={di} onClick={() => setSel(isSel ? null : di)}
@@ -326,8 +327,8 @@ export default function App() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontWeight: 500, fontSize: 15, color: "var(--t1)" }}>Día {sel + 1}</span>
-              {mi === cm && sel === cd && (
-                <span style={{ fontSize: 11, background: "var(--amber-bg)", color: "var(--amber)", padding: "2px 8px", borderRadius: 100 }}>Hoy</span>
+              {getFirstUnread(prog) && mi === getFirstUnread(prog).m && sel === getFirstUnread(prog).d && (
+                <span style={{ fontSize: 11, background: "var(--amber-bg)", color: "var(--amber)", padding: "2px 8px", borderRadius: 100 }}>Siguiente</span>
               )}
             </div>
             <button onClick={() => toggle(mi, sel)}
